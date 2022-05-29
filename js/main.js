@@ -1,26 +1,49 @@
 const app = Vue.createApp({
     data() {
         return {
-            km:0,
-            m:0.
+            items:null,
+            keyword:'',
+            message:'',
         }
     },
     computed:{
 
     },
     watch:{
-        km:function (value) {
-            this.km = value
-            this.m  = value * 1000
-        },
-        m:function (value){
-            this.km = value/1000
-            this.m  = value
-        },
+        keyword:function (newKeyword,oldKeyword) {
+            this.message="入力をやめたら検索を開始します"
+            this.debouncedGetAnswer()
+        }
         //deep:true
     },
+    mounted() {//vueがマウントされた時に読み込まれる なんか初期化したい時はここに
+        //指定時間内に同じイベントが発生した時は処理は実行しない
+        //今回はタイピングし終えて1秒後にgetAnswer関数が動くと思えば良い
+        this.debouncedGetAnswer = _.debounce(this.getAnswer,1500)
+    },
     methods: {
-
+        getAnswer:function(){
+            if (this.keyword === '') {
+                console.log('empty');
+                this.items = null
+                return
+            }
+            this.message = 'loading...'
+            const vm = this
+            const params = {page:1,per_page:20,query:this.keyword}
+            axios.get('https://qiita.com/api/v2/items',{params})
+            .then(function (response) {
+                //レスポンスを受け取った時
+                vm.items =response.data
+            })
+            .catch(function (error) {
+                vm.message = 'error' + error
+            })
+            .finally(function () {
+                //後片付けみたいなもの
+                vm.message = ''
+            })
+        }
     },
 
 })
